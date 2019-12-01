@@ -19,7 +19,7 @@ two :: SolutionF Integer
 two = pure . sum . fmap fuelCalcDeep . fmap read . lines . T.unpack 
 
 fuelCalcDeep :: Integer -> Integer
-fuelCalcDeep n = let m = n `div` 3 - 2 in if m > 0 then m + fuelCalcDeep m else 0
+fuelCalcDeep = sum . tail . takeWhile (>0) . iterate fuelCalc
 
 tests = hspec $ do
     describe "Part 1" $ do
