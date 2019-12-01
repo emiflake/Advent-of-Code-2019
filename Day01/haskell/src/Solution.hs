@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Solution (solution, fuelCalc) where
+module Solution (solution) where
 
 import qualified Data.Text as T
 import Common
@@ -14,10 +14,9 @@ one = tell . sum . fmap fuelCalc . fmap read . lines . T.unpack
 
 two :: SolutionF Integer
 two = tell . sum . fmap fuelCalc . fmap read . lines . T.unpack 
+    where fuelCalc n = let m = n `div` 3 - 2 in if m > 0 then m + fuelCalc m else 0
 
-fuelCalc n = let m = n `div` 3 - 2 in if m > 0 then m + fuelCalc m else 0
-
--- solution :: Solution Int Int
+solution :: Solution Integer Integer
 solution = MkSolution { day = 1
                       , part1 = one
                       , part2 = two
