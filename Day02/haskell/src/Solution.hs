@@ -8,44 +8,45 @@ import Control.Monad.Trans.Writer.Lazy
 import Control.Lens
 import Debug.Trace
 import Test.Hspec
-import qualified Data.Map.Lazy as Map
+import qualified Data.Vector as V
 import Data.List.Split
 import Control.Monad.IO.Class
 import Control.Monad
 
-createMachine :: [Integer] -> Map.Map Integer Integer
-createMachine = Map.fromList . zip [0..]
+type Memory = V.Vector Int
 
-runMachine :: Integer -> Map.Map Integer Integer -> Map.Map Integer Integer
+createMachine :: [Int] -> Memory
+createMachine = V.fromList
+
+runMachine :: Int -> Memory -> Memory
 runMachine pos mp =
     case opcode of
-        1  -> runMachine (pos + 4) (Map.adjust (\_ -> a + b) c mp)
-        2  -> runMachine (pos + 4) (Map.adjust (\_ -> a * b) c mp)
+        1  -> runMachine (pos + 4) (mp V.// [(c, a + b)])
+        2  -> runMachine (pos + 4) (mp V.// [(c, a * b)])
         99 -> mp
-    where opcode = mp Map.! pos
-          a = mp Map.! (mp Map.! (pos + 1))
-          b = mp Map.! (mp Map.! (pos + 2))
-          c = mp Map.! (pos + 3)
+    where opcode = mp V.! pos
+          a = mp V.! (mp V.! (pos + 1))
+          b = mp V.! (mp V.! (pos + 2))
+          c = mp V.! (pos + 3)
 
-runMachineNV :: Integer -> Integer -> Map.Map Integer Integer -> Integer 
+runMachineNV :: Int -> Int -> Memory -> Int 
 runMachineNV noun verb mach = 
     mach
-        & Map.adjust (const noun) 1
-        & Map.adjust (const verb) 2
+        & (V.// [(1, noun)])
+        & (V.// [(2, verb)])
         & runMachine 0
-        & (Map.! 0)
+        & (V.! 0)
 
 
-one :: SolutionF Integer
+one :: SolutionF Int
 one t = do
-    let insts :: [Integer] = fmap read . splitOn "," . T.unpack $ t
-    let machine = createMachine insts & Map.adjust (const 12) 1
-                                      & Map.adjust (const 2) 2
-    pure $ (runMachine 0 machine) Map.! 0
+    let insts :: [Int] = fmap read . splitOn "," . T.unpack $ t
+    let machine = createMachine insts
+    pure $ runMachineNV 12 2 machine
 
-two :: SolutionF Integer
+two :: SolutionF Int
 two t = do
-    let insts :: [Integer] = fmap read . splitOn "," . T.unpack $ t
+    let insts :: [Int] = fmap read . splitOn "," . T.unpack $ t
 
     let base = runMachineNV 0 0 (createMachine insts)
     let multiplier = (runMachineNV 1 0 (createMachine insts)) - base
@@ -59,7 +60,7 @@ tests = hspec $ do
         it "Should be able to run example machine" $ do
             let machine = [1,9,10,3,2,3,11,0,99,30,40,50]
             let res = runMachine 0 (createMachine machine)
-            res Map.! 0 `shouldBe` 3500
+            res V.! 0 `shouldBe` 3500
     describe "Part 2" $ do
         it "Should be able to run example machine" $ do
             let machine = [1,9,10,3,2,3,11,0,99,30,40,50]
@@ -70,7 +71,7 @@ tests = hspec $ do
 
 
 
-solution :: Solution Integer Integer
+solution :: Solution Int Int
 solution = MkSolution { day = 2
                       , part1 = one
                       , part2 = two
