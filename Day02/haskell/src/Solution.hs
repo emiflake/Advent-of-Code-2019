@@ -50,8 +50,7 @@ two t = do
 
     let base = runMachineNV 0 0 (createMachine insts)
     let multiplier = (runMachineNV 1 0 (createMachine insts)) - base
-    let (noun, verb) = ( (19690720 - base) `div` multiplier
-                       , (19690720 - base) `mod` multiplier)
+    let (noun, verb) = (19690720 - base) `divMod` multiplier
     pure (noun * 100 + verb)
 
 
