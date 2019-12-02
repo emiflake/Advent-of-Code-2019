@@ -8,8 +8,7 @@ module Common
     )
   where
 
-import Control.Monad.Writer (runWriterT, MonadWriter, WriterT)
-import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad.Writer
 import Text.Printf
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -19,16 +18,18 @@ type SolutionF s = T.Text -> WriterT [String] IO s
 data Solution a b = MkSolution { day   :: Int -- Day number
                                , part1 :: SolutionF a
                                , part2 :: SolutionF b
+                               , benchmarks :: IO ()
                                , testSpec :: IO ()
                                }
 
+colorRed, colorGreen, colorCyan, colorReset :: String
 colorRed = "\x1b[31m"
 colorGreen = "\x1b[32m"
 colorCyan = "\x1b[36m"
 colorReset = "\x1b[0m"
 
 runSolution :: (Show a, Show b) => Solution a b -> FilePath -> IO ()
-runSolution MkSolution{day, part1, part2, testSpec} fp = do
+runSolution MkSolution{day, part1, part2, testSpec, benchmarks} fp = do
     printf "--- Running Advent of Code Solution for %sDay %02d%s --- \n" colorCyan day colorReset
     printf "%s> Tests%s\n" colorGreen colorReset
     testSpec
@@ -43,4 +44,6 @@ runSolution MkSolution{day, part1, part2, testSpec} fp = do
     (p2res, p2log) <- runWriterT (part2 contents)
     mapM_ (putStrLn . ("Info: "++)) p2log
     putStrLn . ("Result: "++) . show $ p2res
+    printf "%s> Benchmarks%s\n" colorGreen colorReset
+    benchmarks
     printf "--- End --- \n"

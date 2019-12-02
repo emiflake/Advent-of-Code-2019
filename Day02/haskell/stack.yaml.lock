@@ -81,6 +81,13 @@ packages:
       sha256: c355f7924ce67e5bf8f20767462af18f09b8c0d1f7161117221cbb94c15deee3
   original:
     hackage: unix-2.7.2.2@sha256:e69269a17b9fa26cb77f3f55e86c39d0a4940ccfa0c4bc20826919d2572076ad,3496
+- completed:
+    hackage: benchmark-function-0.1.0.1@sha256:c04c5f2c0fc734155e84c9b2ec041d98dadf6b35e4d8f27b1a35a548b968956a,647
+    pantry-tree:
+      size: 276
+      sha256: b9cb49868d269b473a9ca995be918d41da398342c154b5a9610a1d4ed391aa04
+  original:
+    hackage: benchmark-function-0.1.0.1@sha256:c04c5f2c0fc734155e84c9b2ec041d98dadf6b35e4d8f27b1a35a548b968956a,647
 snapshots:
 - completed:
     size: 524804

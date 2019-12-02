@@ -51,6 +51,7 @@ extra-deps:
 - process-1.6.7.0@sha256:305bcf44c42a96425e77af1748183f505a701648f68cc299d5ad8ac1b866a6a1,2468
 - type-equality-1@sha256:aeb9c44abf5d2edf52caff114a7da565d8328fa84bbe194828e4355ea85bf5b3,1457
 - unix-2.7.2.2@sha256:e69269a17b9fa26cb77f3f55e86c39d0a4940ccfa0c4bc20826919d2572076ad,3496
+- benchmark-function-0.1.0.1@sha256:c04c5f2c0fc734155e84c9b2ec041d98dadf6b35e4d8f27b1a35a548b968956a,647
 # Override default flag values for local packages and extra-deps
 # flags: {}
 
