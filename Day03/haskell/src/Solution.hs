@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Solution (solution, parse) where
 
 import qualified Data.Text as T
@@ -12,7 +13,8 @@ import Data.Ord
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Linear
-import Control.Lens ((^?!), (?~), ix, at)
+import Control.Lens ((^?!), (?~), (^.), (.~), (%~), (+~), ix, at)
+import Control.Lens.TH (makeLenses)
 
 type Path = S.Set (V2 Int)
 
@@ -22,11 +24,13 @@ data Direction = R | L | U | D
 data Movement = Movement Direction Int
                deriving (Show, Eq)
 
-data S = S { position  :: V2 Int
-           , path      :: Path 
-           , stepCount :: Int
-           , costs     :: M.Map (V2 Int) Int}
+data S = S { _position  :: V2 Int
+           , _path      :: Path 
+           , _stepCount :: Int
+           , _costs     :: M.Map (V2 Int) Int}
            deriving Show
+
+makeLenses ''S
 
 parse :: String -> [Movement]
 parse = fmap pMovement . splitOn ","
@@ -49,29 +53,27 @@ vectorFor R = V2   1    0
 dist0 :: V2 Int -> Int
 dist0 (V2 xa ya) = abs xa + abs ya
 
-step :: Direction -> S -> S
-step dir S{position, path, costs, stepCount} =
-    let newPos = position ^+^ (vectorFor dir)
-    in S{ position = newPos
-        , path = S.insert position path
-        , stepCount = stepCount + 1
-        , costs = costs & at position ?~ stepCount }
+makeLine :: S -> Movement -> S
+makeLine s (Movement dir amt) =
+    let positions = take (succ amt) $ iterate (^+^ vectorFor dir) (s ^. position)
+    in s & position .~ last positions
+         & path %~ (<> S.fromList positions)
+         & stepCount +~ amt
+         & costs %~ ((<>) . M.fromList . zip positions . enumFrom $ s ^. stepCount)
 
-findPath' :: [Movement] -> S -> S
-findPath' actions ss =
-    let foldF s (Movement dir amt) = iterate (step dir) s !! amt 
-     in foldl foldF ss actions
+findPath' :: S -> [Movement] -> S
+findPath' = foldl makeLine
 
 findPath :: [Movement] -> S
-findPath w = findPath' w (S (V2 0 0) S.empty 0 (M.fromList []))
+findPath = findPath' (S (V2 0 0) S.empty 0 (M.fromList []))
 
 one :: SolutionF Int
 one t =
     let [a, b] = lines . T.unpack $ t
         wireA = parse a
         wireB = parse b
-        S{path=pa} = findPath wireA
-        S{path=pb} = findPath wireB
+        S{_path=pa} = findPath wireA
+        S{_path=pb} = findPath wireB
     in pa `S.intersection` pb
         & S.toList
         & filter (/= V2 0 0)
@@ -84,8 +86,8 @@ two t =
     let [a, b] = lines . T.unpack $ t
         wireA = parse a
         wireB = parse b
-        S{path=pa, costs=ca} = findPath wireA
-        S{path=pb, costs=cb} = findPath wireB
+        S{_path=pa, _costs=ca} = findPath wireA
+        S{_path=pb, _costs=cb} = findPath wireB
     in pa `S.intersection` pb
         & S.toList
         & filter (/= V2 0 0)
