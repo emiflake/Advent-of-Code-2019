@@ -12,7 +12,6 @@ import Control.Monad.Writer
 import Text.Printf
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Criterion.Main
 
 type SolutionF s = T.Text -> WriterT [String] IO s
 
@@ -44,7 +43,4 @@ runSolution MkSolution{day, part1, part2, testSpec} fp = do
     (p2res, p2log) <- runWriterT (part2 contents)
     mapM_ (putStrLn . ("Info: "++)) p2log
     putStrLn . ("Result: "++) . show $ p2res
-    printf "%s> Benchmarks%s\n" colorGreen colorReset
-    -- defaultMain [ bench "Part 1" $ whnf (const $ runWriterT (part1 contents)) () 
-    --             , bench "Part 2" $ whnf (const $ runWriterT (part2 contents)) () ]
     printf "--- End --- \n"

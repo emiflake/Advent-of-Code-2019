@@ -20,27 +20,29 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/haskell#readme>
 
 dependencies:
-- base               >= 4.7 && < 5
+- base                 >= 4.7 && < 5
 
-- aeson              == 1.4.4.0
-- http-conduit       == 2.3.7.3
-- bytestring         == 0.10.10.0
-- text               == 1.2.4.0
-- pretty-simple      == 3.1.0.0
-- containers         == 0.6.2.1
-- mtl                == 2.2.2
-- transformers       == 0.5.6.2
-- lens               == 4.18.1
-- parsec             == 3.1.14.0
-- split              == 0.2.3.3
-- vector             == 0.12.0.3
+- aeson                == 1.4.4.0
+- http-conduit         == 2.3.7.3
+- bytestring           == 0.10.10.0
+- text                 == 1.2.4.0
+- pretty-simple        == 3.1.0.0
+- containers           == 0.6.2.1
+- mtl                  == 2.2.2
+- transformers         == 0.5.6.2
+- lens                 == 4.18.1
+- parsec               == 3.1.14.0
+- split                == 0.2.3.3
+- vector               == 0.12.0.3
+- unordered-containers == 0.2.10.0
+- linear               == 1.20.9
 
 # Benchmarking
-- criterion          == 1.5.6.1
+- criterion            == 1.5.6.1
 
 # Testing
-- raw-strings-qq     == 1.1
-- hspec              == 2.7.1
+- raw-strings-qq       == 1.1
+- hspec                == 2.7.1
 
 library:
   source-dirs: src
