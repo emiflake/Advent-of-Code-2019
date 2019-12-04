@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Solution (solution, predicate) where
+module Solution (solution, predicate, range) where
 
 import qualified Data.Text as T
 import Common
@@ -28,13 +28,19 @@ predicate2 :: Int ->  Bool
 predicate2 = check . digits
     where check = (&&) <$> ordered <*> tripleCheck
 
+range :: Int -> Int -> [Int]
+range low high = filter ((&&) <$> (>low) <*> (<high)) . map (read . reverse . concatMap show) $ go 5 9
+    where go :: Int -> Int -> [[Int]]
+          go 0 m = (:[]) <$> [0..m]
+          go n m = concatMap (\v -> map (v:) (go (n - 1) v)) [0..m]
+
 one :: SolutionF Int
 one t = let [a, b] = fmap read . splitOn "-" $ T.unpack t
-        in pure . length . filter predicate $ [a..b] 
+        in pure . length . filter predicate $ range a b
 
 two :: SolutionF Int
 two t = let [a, b] = fmap read . splitOn "-" $ T.unpack t
-        in pure . length . filter predicate2 $ [a..b]
+        in pure . length . filter predicate2 $ range a b
 
 tests :: IO ()
 tests = hspec $ do 
