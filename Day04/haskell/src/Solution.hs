@@ -5,9 +5,11 @@ module Solution (solution, predicate) where
 import qualified Data.Text as T
 import Common
 import Test.Hspec
-import Data.Function
 import Data.List.Split
 import Data.List
+
+digits :: Int -> [Int]
+digits = fmap (read . (:[])) . show
 
 ordered :: [Int] -> Bool
 ordered xs = all (uncurry (<=)) (zip xs (tail xs))
@@ -18,17 +20,13 @@ doubleCheck = any ((>=2) . length) . group
 tripleCheck :: [Int] -> Bool
 tripleCheck = any ((==2) . length) . group
 
-{-# INLINE predicate #-} 
 predicate :: Int ->  Bool
-predicate = check . map f . show
-    where f x = read [x] :: Int
-          check = (&&) <$> ordered <*> doubleCheck
+predicate = check . digits
+    where check = (&&) <$> ordered <*> doubleCheck
 
-{-# INLINE predicate2 #-}          
 predicate2 :: Int ->  Bool
-predicate2 = check . map f . show
-    where f x = read [x] :: Int
-          check = (&&) <$> ordered <*> tripleCheck
+predicate2 = check . digits
+    where check = (&&) <$> ordered <*> tripleCheck
 
 one :: SolutionF Int
 one t = let [a, b] = fmap read . splitOn "-" $ T.unpack t
