@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Solution (solution, predicate, range) where
+module Solution (solution, predicate, range, digits) where
 
 import qualified Data.Text as T
 import Common
@@ -9,7 +9,7 @@ import Data.List.Split
 import Data.List
 
 digits :: Int -> [Int]
-digits = fmap (read . (:[])) . show
+digits = map (`mod` 10) . dropWhile (==0) . reverse . take 6 . iterate (`div` 10)
 
 ordered :: [Int] -> Bool
 ordered xs = all (uncurry (<=)) (zip xs (tail xs))
