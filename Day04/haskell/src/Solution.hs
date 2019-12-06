@@ -29,9 +29,9 @@ predicate2 = check . digits
     where check = (&&) <$> ordered <*> tripleCheck
 
 range :: Int -> Int -> [Int]
-range low high = filter ((&&) <$> (>low) <*> (<high)) . map (read . reverse . concatMap show) $ go 5 9
+range low high = filter ((&&) <$> (>low) <*> (<high)) . map (read . reverse . concatMap show) $ go 6 9
     where go :: Int -> Int -> [[Int]]
-          go 0 m = (:[]) <$> [0..m]
+          go 1 m = (:[]) <$> [0..m]
           go n m = concatMap (\v -> map (v:) (go (n - 1) v)) [0..m]
 
 one :: SolutionF Int

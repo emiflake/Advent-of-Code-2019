@@ -138,7 +138,7 @@ runMachine = do
                                 then m & pc .~ (jumpLoc `locGet` _memory)
                                 else m & pc +~ 3
 
-    traceShow (digits raw, args, opcode) $ case opcode of
+    trace (repr opcode) $ case opcode of
         Add a b out           -> next (binopPerform (+) a b out)
         Mul a b out           -> next (binopPerform (*) a b out)
         Inp to                -> next (readMem to)
