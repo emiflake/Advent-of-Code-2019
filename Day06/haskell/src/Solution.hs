@@ -7,6 +7,8 @@ import Data.List
 import Control.Monad.Writer
 import Text.Parsec
 import Text.Parsec.String
+import qualified Data.Set as S
+import Data.Set (Set)
 
 type Orbits = [(String, String)]
 
@@ -35,13 +37,13 @@ countOrbits = go 0 "COM"
           go d k orbits = let orbs = filter (\(key,_) -> key == k) orbits
                           in d + sum (map (\(_,n) -> go (d + 1) n orbits) orbs)
 
-distanceBetween :: String -> String -> Orbits -> [String]
-distanceBetween src trgt orbits = go [] src
-    where go :: [String] -> String -> [String]
+distanceBetween :: String -> String -> Orbits -> Set String
+distanceBetween src trgt orbits = go S.empty src
+    where go :: Set String -> String -> Set String
           go visited loc | loc == trgt = visited
-                         | otherwise = concatMap (\n -> go (loc:visited) n) next
-            where toNodes = fmap snd $ filter (\(key,_) -> key == loc && key `notElem` visited) orbits
-                  fromNodes = fmap fst $ filter (\(_,key) -> key == loc && key `notElem` visited) orbits
+                         | otherwise = S.unions $ map (\n -> go (S.insert loc visited) n) next
+            where toNodes = fmap snd $ filter (\(key,_) -> key == loc && key `S.notMember` visited) orbits
+                  fromNodes = fmap fst $ filter (\(_,key) -> key == loc && key `S.notMember` visited) orbits
                   next = toNodes `union` fromNodes
 
 
