@@ -1,0 +1,8 @@
+loop:
+	add [counter] 1 [counter]
+	output counter
+	less [counter] $10 [pred]
+	jnz [pred] 'loop
+	halt
+pred: $0
+counter: $0
