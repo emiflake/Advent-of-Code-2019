@@ -11,93 +11,90 @@ import qualified Data.Sequence as Seq
 import Data.Sequence (Seq)
 import Control.Lens
 import Data.Maybe
+import Control.Concurrent
+import Text.Pretty.Simple
 
 import Language.IntCode.Core 
 
 data Effect = Halt
-            | Output Int Effect
-            | Input (Int -> Effect)
+            | Output Integer Effect
+            | Input (Integer -> Effect)
 
-data MachineState = MS { _ip     :: Int
+data MachineState = MS { _ip     :: Integer
                        , _memory :: Memory
+                       , _base   :: Integer
                        }
                        deriving Show
 
 makeLenses ''MachineState               
 
-data Step = Step     MachineState
-          | StepInp  (Int -> MachineState)
-          | StepOut  Int MachineState
-          | StepHalt MachineState
+machine :: MachineState
+machine = MS { _ip     = 0
+             , _memory = V.fromList (replicate 900 0)
+             , _base   = 0
+             }
 
-load :: Param -> MachineState -> Maybe Int
-load (Im v)  _ = pure v
-load (Ref r) m = m ^? memory.ix r
+makeMachine :: [Integer] -> MachineState
+makeMachine insts = machine & memory %~ (V.fromList insts<>)
 
-save :: Param -> Int -> Memory -> Maybe Memory
-save (Im _)  _   _ = Nothing
-save (Ref r) val m = m & ix r .~ val
-                       & pure
+data Step = Step     MachineState               -- Continuable
+          | StepInp  (Integer -> MachineState)  -- Suspended
+          | StepOut  Integer MachineState       -- Output
+          | StepHalt                            -- Aborted
 
+effList :: Effect -> [Integer] -> [Integer]
+effList Halt _ = []
+effList (Output v eff) is = v : effList eff is
+effList (Input f) (i:is) = effList (f i) is
+effList _ [] = error "no input"
+
+machineInterpEff :: Step -> Effect
+machineInterpEff (Step next)      = machineInterpEff (stepMachine next)
+machineInterpEff (StepInp f)      = Input (machineInterpEff . stepMachine . f)
+machineInterpEff (StepOut v next) = Output v (machineInterpEff (stepMachine next))
+machineInterpEff StepHalt = Halt
+
+machineInterpIO :: Step -> IO ()
+machineInterpIO (Step next)      = threadDelay 10000 >> machineInterpIO (stepMachine next)
+machineInterpIO (StepInp f)      = getLine >>= machineInterpIO . stepMachine . f . read
+machineInterpIO (StepOut v next) = print v >> machineInterpIO (stepMachine next)
+machineInterpIO StepHalt         = pure ()
+
+load :: Param -> MachineState -> Integer
+load (Im v)  _ = v
+load (Ref r) m = m ^?! memory.ix (fromIntegral r)
+load (Rel r) m = m ^?! memory.ix (fromIntegral $ r + m ^. base)
+
+save :: Param -> Integer -> MachineState -> MachineState
+save (Im _)  _   _ = error "Cannot write to immediate value"
+save (Ref r) val m = m & memory.ix (fromIntegral r) .~ val
+save (Rel r) val m = m & memory.ix (fromIntegral $ r + m ^. base) .~ val
+
+step :: IntCode -> MachineState -> MachineState
+step ic = ip +~ steps ic
+
+setIP :: Integer -> MachineState -> MachineState
+setIP i = ip .~ i
+
+less :: Integer -> Integer -> Integer
+less a b = toEnum . fromEnum $ a < b
+
+equals :: Integer -> Integer -> Integer
+equals a b = toEnum . fromEnum $ a == b
 
 stepMachine :: MachineState -> Step           
-stepMachine = undefined
-               
--- step :: IntCode -> State Machine ()
--- step ic =
---     ip += steps ic
-
--- binopInst :: (Int -> Int -> Int) -> Param -> Param -> Int -> State Machine ()
--- binopInst op a b out = do
---     a' <- getParam a
---     b' <- getParam b
---     memory.ix out .= a' `op` b'
-
--- readInput :: IntCode -> Int -> State Machine RunningState
--- readInput ic out = do
---     m <- get
---     case m ^. input of 
---         Seq.Empty -> pure Suspended
---         (x Seq.:<| xs) -> do
---             memory.ix out .= x
---             input .= xs
---             step ic
---             runMachine
-
--- writeOutput :: IntCode -> Param -> State Machine RunningState
--- writeOutput ic out = do
---     v <- getParam out
---     output %= (Seq.|> v)
---     step ic
---     runMachine
-
--- jump :: (Bool -> Bool) -> Param -> Param -> State Machine RunningState
--- jump f cond loc = do
---     cond' <- getParam cond
---     loc'  <- getParam loc
---     if (f $ cond' /= 0)
---     then ip .= loc' >> runMachine
---     else ip += 3    >> runMachine
-
--- getIntCode :: State Machine (Maybe IntCode)
--- getIntCode = do
---     m <- get
---     pure $ readIntCode (m ^. ip) (m ^. memory)
-    
--- runMachine :: State Machine RunningState
--- runMachine = do
---     maybeOpcode <- getIntCode
---     let opcode = fromJust maybeOpcode
---     case opcode of
---         Add    a b out       -> binopInst (+) a b out >> step opcode >> runMachine
---         Mul    a b out       -> binopInst (*) a b out >> step opcode >> runMachine
---         Input      out       -> readInput opcode out
---         Output     inp       -> writeOutput opcode inp
---         JumpIfTrue cond loc  -> jump id cond loc
---         JumpIfFalse cond loc -> jump not cond loc
---         Less   a b out       -> binopInst (\a' b' -> fromEnum $ a' < b') a b out >> step opcode >> runMachine
---         Equals a b out       -> binopInst (\a' b' -> fromEnum $ a' == b') a b out >> step opcode >> runMachine
---         Halt                 -> pure Halted
-
--- runMachine' :: Machine -> (RunningState, Machine)    
--- runMachine' = runState runMachine
+stepMachine m = do
+        let opcode = fromJust $ readIntCode (m ^. ip) (m ^. memory)
+        case opcode of
+            Add a b c               -> Step . step opcode . save c (load a m + load b m) $ m
+            Mul a b c               -> Step . step opcode . save c (load a m * load b m) $ m
+            Inp o                   -> StepInp (\inp -> step opcode . save o inp $ m)
+            Out l                   -> StepOut (load l m) (step opcode m)
+            Jnz p l | load p m /= 0 -> Step . setIP (load l m) $ m
+            Jnz p l                 -> Step . step opcode    $ m
+            Jez p l | load p m == 0 -> Step . setIP (load l m) $ m
+            Jez p l                 -> Step . step opcode    $ m
+            Less a b c              -> Step . step opcode . save c (load a m `less` load b m) $ m
+            Equals a b c            -> Step . step opcode . save c (load a m `equals` load b m) $ m
+            AdjustBase o            -> Step . step opcode . (base .~ load o m + m ^. base) $ m
+            Hlt                     -> StepHalt 
