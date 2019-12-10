@@ -1,5 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 module Solution where
 
@@ -54,8 +52,13 @@ two t =
     let field = parseAsteroidField . T.unpack $ t
         (pos, _) = maximumBy (comparing snd) $ Set.map (\o -> (o, Set.size $ asteroidGroups o field)) field
         groups = asteroidGrouped pos field
-        sortedGroups = groups & sortBy (comparing (\g -> calcAngle $ (head g) ^-^ pos))
-    in pure . (\(V2 x y) -> x * 100 + y) . (!!199) . join . Data.List.transpose $ sortedGroups
+    in pure 
+     . (\(V2 x y) -> x * 100 + y)
+     . (!!199) 
+     . join 
+     . Data.List.transpose
+     . sortBy (comparing (calcAngle . (^-^ pos) . head))
+     $ groups
 
 calcAngle :: V2 Int -> Float
 calcAngle (normed -> (V2 dx dy))
