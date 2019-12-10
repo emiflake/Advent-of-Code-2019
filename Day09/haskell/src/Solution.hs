@@ -200,10 +200,9 @@ two t = do
     let insts = (fmap read . splitOn "," . T.unpack $ t) :: [Integer]
         base = machine & memory %~ (V.fromList insts<>)
                        & input .~ (Seq.fromList [2])
-        res = runState runMachine base
+        res = execState runMachine base
     
     tell [show res]
-
     pure 1
 tests :: IO ()
 tests = hspec $ do
@@ -230,7 +229,7 @@ tests = hspec $ do
 
 
 solution :: Solution Integer Integer
-solution = MkSolution { day = 7
+solution = MkSolution { day = 9
                       , part1 = one
                       , part2 = two
                       , testSpec = tests

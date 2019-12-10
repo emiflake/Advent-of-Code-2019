@@ -55,7 +55,6 @@ data IntCode = Halt
 digits :: Int ->Int -> [Int]
 digits n = map (`mod` 10) . reverse . take n . iterate (`div` 10)
 
-
 parseIntCode :: State Machine IntCode
 parseIntCode = do
     m <- get
