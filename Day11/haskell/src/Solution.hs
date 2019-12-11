@@ -82,7 +82,7 @@ two t = do
     let instructions :: [Integer] = fmap read . splitOn "," . T.unpack $ t
         machine = makeMachine instructions
         steps = stepMachine machine
-        worldState = machineInterpPaint steps (startState & world .~ Map.fromList [(V2 0 0, 1)])
+        worldState = machineInterpPaint steps (startState)
         minx = view _x $ minimumBy (comparing (view _x)) $ Map.keys (worldState ^. world)
         miny = view _y $ minimumBy (comparing (view _y)) $ Map.keys (worldState ^. world)
         maxx = view _x $ maximumBy (comparing (view _x)) $ Map.keys (worldState ^. world)
@@ -90,13 +90,21 @@ two t = do
         width = maxx - minx
         height = maxy - miny
 
-    forM_ (zip [0..100] (reverse $ worldState ^. prevStates)) $ \(i, st) -> do    
+    let every n xs = case drop (n-1) xs of
+            (y:ys) -> y : every n ys
+            [] -> []
+       
+
+    let interval = 10
+
+
+    forM_ (every interval $ zip [0..] (reverse $ worldState ^. prevStates)) $ \(i, st) -> do    
         liftIO $ print i
-        let res = I.makeImageR I.VU (height * 10, width * 10) (\(y, x) -> case (st) Map.!? (V2 (x - 50) (negate (y - 50))) of
+        let res = I.scale I.Nearest I.Edge (8, 8) $ I.makeImageR I.VU (height * 2, width * 2) (\(y, x) -> case (st) Map.!? (V2 (x - width) (negate (y - height - 25))) of
                 Nothing -> I.PixelY 0.1
                 Just 1 -> I.PixelY 1.0
                 Just _ -> I.PixelY 0)        
-        liftIO $ I.writeImage ("out/image" ++ show i ++ ".png") (res :: I.Image I.VU I.Y Double)
+        liftIO $ I.writeImage ("out/image" ++ show (i `div` interval) ++ ".png") (res :: I.Image I.VU I.Y Double)
 
     tell [show (minx, miny, maxx, maxy)]
     tell [show (width, height)]
