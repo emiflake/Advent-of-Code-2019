@@ -13,12 +13,10 @@ import Data.List
 import Control.Monad.Writer
 import qualified Data.Map as Map
 import Data.Map (Map)
-import qualified Data.Set as Set
-import Data.Set (Set)
 import Linear
-import Debug.Trace
 import Control.Lens
 import Data.Ord
+import Data.Maybe
 import qualified Graphics.Image as I
 
 
@@ -60,11 +58,11 @@ machineInterpPaint (Step ms)      ws =
                               & world %~ (Map.insert (ws ^. position) (fromIntegral color))
                               & prevStates %~ (ws^.world :)
             in machineInterpPaint (stepMachine ms) (newState)
-        _ -> machineInterpPaint (stepMachine ms) ws
+
+        _ -> machineInterpPaint (stepMachine ms) ws -- Step normally when no input is availably
 machineInterpPaint (StepInp f)    ws = 
-    case (ws ^.world) Map.!? (ws ^. position) of
-        Nothing -> machineInterpPaint (stepMachine (f (fromIntegral 0))) ws
-        Just c  -> machineInterpPaint (stepMachine (f (fromIntegral c))) ws
+    let color = fromMaybe 0 $ (ws ^.world) Map.!? (ws ^. position)
+    in (machineInterpPaint . stepMachine . f . fromIntegral $ color) ws
 machineInterpPaint (StepOut v ms) ws = machineInterpPaint (stepMachine ms) (ws & outputStack %~ (v:))
 machineInterpPaint StepHalt       ws = ws
 
@@ -72,21 +70,22 @@ machineInterpPaint StepHalt       ws = ws
 one :: SolutionF Int
 one t = do
     let instructions :: [Integer] = fmap read . splitOn "," . T.unpack $ t
-        machine = makeMachine instructions
-        steps = stepMachine machine
-        worldState = machineInterpPaint steps startState 
+        machine' = makeMachine instructions
+        step' = stepMachine machine'
+        worldState = machineInterpPaint step' startState 
     pure . Map.size $ worldState ^. world
 
 two :: SolutionF Int
 two t = do
     let instructions :: [Integer] = fmap read . splitOn "," . T.unpack $ t
-        machine = makeMachine instructions
-        steps = stepMachine machine
-        worldState = machineInterpPaint steps (startState)
-        minx = view _x $ minimumBy (comparing (view _x)) $ Map.keys (worldState ^. world)
-        miny = view _y $ minimumBy (comparing (view _y)) $ Map.keys (worldState ^. world)
-        maxx = view _x $ maximumBy (comparing (view _x)) $ Map.keys (worldState ^. world)
-        maxy = view _y $ maximumBy (comparing (view _y)) $ Map.keys (worldState ^. world)
+        machine' = makeMachine instructions
+        step' = stepMachine machine'
+        worldState = machineInterpPaint step' (startState)
+        positions = Map.keys (worldState ^. world)
+        minx = view _x $ minimumBy (comparing (view _x)) $ positions
+        miny = view _y $ minimumBy (comparing (view _y)) $ positions
+        maxx = view _x $ maximumBy (comparing (view _x)) $ positions
+        maxy = view _y $ maximumBy (comparing (view _y)) $ positions
         width = maxx - minx
         height = maxy - miny
 
