@@ -2,6 +2,8 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Solution where
 
@@ -10,15 +12,8 @@ import Common
 import qualified Data.Vector.Unboxed as V
 import Data.Vector.Unboxed (Vector)
 import Test.Hspec
-import Data.List
+import Control.Monad (forM_)
 import Control.Monad.Writer
-import Control.Lens
-import Data.Ord
-import Data.Maybe
-import Text.Pretty.Simple
-import Debug.Trace
-import Data.Char
-
 
 data Section = Section { sign   :: !Int
                        , sIndex :: !Int
@@ -54,6 +49,15 @@ fft offset xs = V.generate len fftSingle
                   | Section{..} <- relevant i
                   ]
           fftSingle _ = 0
+          
+fftSimple :: Int -> Vector Int -> Vector Int
+fftSimple offset xs = V.generate len fftSingle
+    where len = V.length xs
+          sums = V.scanl (+) 0 xs
+          fftSingle i | i >= offset = 
+            (`rem` 10) .
+            abs $ sums V.! len - sums V.! i
+          fftSingle _ = 0
 
 one :: SolutionF Int
 one t = do
@@ -68,12 +72,27 @@ two t = do
 
     let bigDigs = V.concat (replicate 10000 digs)    
 
-    if offset > V.length bigDigs
-    then pure 2
-    else pure . read . concatMap show . V.toList . V.take 8 . V.drop offset . (!!100) . iterate (fft offset) $ bigDigs
+    let f = if offset > (V.length bigDigs) `div` 2
+            then fftSimple 
+            else fft
+    pure . read . concatMap show . V.toList . V.take 8 . V.drop offset . (!!100) . iterate (f offset) $ bigDigs
 
 tests :: IO ()
-tests = hspec $ pure ()
+tests = hspec $ do
+    describe "Part 1 tests" $ do
+        it "Should handle all examples" $ do
+            let cases = [ ("80871224585914546619083218645595", 24176176)
+                        , ("19617804207202209144916044189917", 73745418)
+                        , ("69317163492948606335995924319873", 52432133) ]
+
+            forM_ cases \(test, expected) -> (fst <$> runWriterT (one test)) >>= shouldBe expected
+    describe "Part 2 tests" $ do
+        it "Should handle all examples" $ do
+            let cases = [ ("03036732577212944063491565474664", 84462026)
+                        , ("02935109699940807407585447034323", 78725270)
+                        , ("03081770884921959731165446850517", 53553731) ]
+
+            forM_ cases \(test, expected) -> (fst <$> runWriterT (two test)) >>= shouldBe expected
 
 solution :: Solution Int Int
 solution = MkSolution { day = 14
