@@ -2,3 +2,4 @@
 
 This day has been solved in:
 - Haskell
+- Kotlin (part 1)

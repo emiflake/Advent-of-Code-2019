@@ -153,15 +153,11 @@ one t = do
         player = fst . fromJust . find (\(_,v) -> v == '@') $ worldRaw
         paths = search world [player]
 
-
-    liftIO $ gamePlay paths world
-
-    pure 1
-    -- pure . stepCount
-    --      . head
-    --      . sortBy (comparing stepCount)
-    --      . filter (\Search{..} -> Set.size keys == 26)
-    --      $ paths
+    pure . stepCount
+         . head
+         . sortBy (comparing stepCount)
+         . filter (\Search{..} -> Set.size keys == 26)
+         $ paths
 
 
 morph :: V2 Int -> World -> World
@@ -173,16 +169,15 @@ two t = do
         world = Map.fromList . fmap (\(p, v) -> (p, parseTile v)) $ worldRaw
         player = fst . fromJust . find (\(_,v) -> v == '@') $ worldRaw
 
-    -- pure . stepCount
-    --      . head
-    --      . sortBy (comparing stepCount)
-    --      . filter (\Search{..} -> Set.size keys == 26)
-    --      $ search (morph player world) [ player ^+^ V2   1    1
-    --                                    , player ^+^ V2 (-1)   1
-    --                                    , player ^+^ V2   1  (-1)
-    --                                    , player ^+^ V2 (-1) (-1)
-    --                                    ]
-    pure 2
+    pure . stepCount
+         . head
+         . sortBy (comparing stepCount)
+         . filter (\Search{..} -> Set.size keys == 26)
+         $ search (morph player world) [ player ^+^ V2   1    1
+                                       , player ^+^ V2 (-1)   1
+                                       , player ^+^ V2   1  (-1)
+                                       , player ^+^ V2 (-1) (-1)
+                                       ]
 
 tests :: IO ()
 tests = hspec $ do
