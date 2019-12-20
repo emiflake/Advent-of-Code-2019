@@ -47,6 +47,15 @@ parseCharMap xs = Map.fromList
                     , (x, c) <- zip [0..] l
                     ]
 
+closeEnds :: CharMap -> CharMap
+closeEnds cm = let n = Map.mapWithKey f cm in if n == cm then n else closeEnds n
+    where f :: V2 Int -> Char -> Char
+          f p c = case c of
+                    '.' | countNeighbours p == 3 -> '#'
+                    c' -> c'
+
+          countNeighbours p = length [ () | p' <- neighbours p, let v = (Map.findWithDefault ' ' p' cm), v == '#' || v == ' ']
+
 parseWorld :: CharMap -> World
 parseWorld charMap = Map.mapWithKey f charMap
     where f :: V2 Int -> Char -> Tile
@@ -160,6 +169,7 @@ project (V2 x y) = G.translate (fromIntegral (x - 60) * 6) (fromIntegral (y - 60
 
 gradient phi = G.withAlpha 1.0 $ G.mixColors phi (1.0 - phi) G.red G.green
 
+
 drawModel :: Model -> G.Picture
 drawModel model =
     G.pictures [ G.pictures . fmap (\(p, v) -> project p
@@ -167,13 +177,13 @@ drawModel model =
                                                $ square) $ (Map.toList (model ^. world))
                , G.pictures $ fmap (\Search{..} ->
                                         let draw = G.color G.white $ square
-                                        in project pos draw) $ (take (model ^. currDepth - 1000) $ model ^. paths)
+                                        in project pos draw) $ (take (model ^. currDepth - 100) $ model ^. paths)
                ]
 
 gamePlay :: [Search] -> World -> IO ()
 gamePlay ps w = G.play G.FullScreen
                 (G.makeColor 0.058 0.059 0.137 1.0)
-                300
+                100
                 (startModel ps w)
                 drawModel
                 inputModel
@@ -181,7 +191,7 @@ gamePlay ps w = G.play G.FullScreen
 
 one :: SolutionF Int
 one t = do
-    let map = parseWorld . parseCharMap . T.unpack $ t
+    let map = parseWorld . closeEnds . parseCharMap . T.unpack $ t
         start = positionForPortal Nothing "AA" map
         s = search map start
 
@@ -190,7 +200,7 @@ one t = do
 
 two :: SolutionF Int
 two t = do
-    let map = parseWorld . parseCharMap . T.unpack $ t
+    let map = parseWorld . closeEnds . parseCharMap . T.unpack $ t
         start = positionForPortal Nothing "AA" map
 
     pure . stepCount . head . filter found $ search2 map start
